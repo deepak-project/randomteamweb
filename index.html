@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Generator with Constraints</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+     <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <header>
+        <h1><i class="fas fa-users"></i> Team Generator</h1>
+        <p>Create balanced teams with custom constraints for members</p>
+    </header>
+
+    <div class="container">
+        <div class="section">
+            <h2><i class="fas fa-list-ol"></i> Total Members</h2>
+            <input type="number" id="total-members" min="1" placeholder="Enter total number of members">
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-user-plus"></i> Add Members</h2>
+            <input type="text" id="member-name" placeholder="Type a name and press Enter" disabled>
+            <div id="members-list"></div>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-user-friends"></i> Team Size</h2>
+            <input type="number" id="team-size" min="1" placeholder="Enter number of people per team" disabled>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-ban"></i> Separation Constraints</h2>
+            <label>Members that must NOT be in the same team:</label>
+            <textarea id="not-same-team" rows="3" placeholder="Example: Alice,Bob&#10;Charlie,David"
+                disabled></textarea>
+            <span class="constraints-example">Enter one pair per line, separated by a comma (e.g., John, Jane)</span>
+        </div>
+
+        <div class="section">
+            <h2><i class="fas fa-link"></i> Pairing Constraints</h2>
+            <label>Members that must be in the same team:</label>
+            <textarea id="same-team" rows="3" placeholder="Example: Eve,Frank&#10;Grace,Hank" disabled></textarea>
+            <span class="constraints-example">Enter one pair per line, separated by a comma (e.g., Alex, Taylor)</span>
+        </div>
+
+        <div class="buttons">
+            <button id="generate-btn" disabled><i class="fas fa-cogs"></i> Generate Teams</button>
+        </div>
+
+        <div id="teams-output"></div>
+
+        <div class="clap-container" id="clap-container">
+            <div class="clap">👏</div>
+            <div class="clap">👏</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Made with ❤️ by Mr. Deepak Shah | Easy team generation with smart constraints</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const totalMembersInput = document.getElementById('total-members');
+            const memberNameInput = document.getElementById('member-name');
+            const membersListDiv = document.getElementById('members-list');
+            const teamSizeInput = document.getElementById('team-size');
+            const notSameTeamInput = document.getElementById('not-same-team');
+            const sameTeamInput = document.getElementById('same-team');
+            const generateBtn = document.getElementById('generate-btn');
+            const teamsOutput = document.getElementById('teams-output');
+            const clapContainer = document.getElementById('clap-container');
+
+            let totalMembers = 0;
+            let members = [];
+
+            // Initially hide the clap container
+            clapContainer.style.display = 'none';
+
+            // Enable member name input after total members entered
+            totalMembersInput.addEventListener('change', () => {
+                totalMembers = parseInt(totalMembersInput.value);
+                if (totalMembers > 0) {
+                    memberNameInput.disabled = false;
+                    members = [];
+                    updateMembersList();
+                    teamSizeInput.value = '';
+                    teamSizeInput.disabled = true;
+                    notSameTeamInput.value = '';
+                    notSameTeamInput.disabled = true;
+                    sameTeamInput.value = '';
+                    sameTeamInput.disabled = true;
+                    generateBtn.disabled = true;
+                    teamsOutput.innerHTML = '';
+                    clapContainer.style.display = 'none';
+                    memberNameInput.focus();
+                } else {
+                    memberNameInput.disabled = true;
+                    teamSizeInput.disabled = true;
+                    notSameTeamInput.disabled = true;
+                    sameTeamInput.disabled = true;
+                    generateBtn.disabled = true;
+                    members = [];
+                    updateMembersList();
+                    teamsOutput.innerHTML = '';
+                    clapContainer.style.display = 'none';
+                }
+            });
+
+            // Add member on Enter key
+            memberNameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const name = memberNameInput.value.trim();
+                    if (name && members.length < totalMembers) {
+                        if (members.includes(name)) {
+                            alert('This member is already added.');
+                            memberNameInput.value = '';
+                            return;
+                        }
+                        members.push(name);
+                        updateMembersList();
+                        memberNameInput.value = '';
+                        if (members.length === totalMembers) {
+                            memberNameInput.disabled = true;
+                            teamSizeInput.disabled = false;
+                            notSameTeamInput.disabled = false;
+                            sameTeamInput.disabled = false;
+                            generateBtn.disabled = false;
+                            teamSizeInput.focus();
+                        }
+                    }
+                }
+            });
+
+            // Trigger generate on Enter key in team size input
+            teamSizeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!generateBtn.disabled) {
+                        generateBtn.click();
+                    }
+                }
+            });
+
+            // Update members list display with remove buttons
+            function updateMembersList() {
+                membersListDiv.innerHTML = '';
+                members.forEach((name, index) => {
+                    const span = document.createElement('span');
+                    span.className = 'member-tag';
+                    span.textContent = name;
+
+                    // Add remove button
+                    const removeBtn = document.createElement('span');
+                    removeBtn.textContent = '×';
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.title = 'Remove member';
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        members.splice(index, 1);
+                        updateMembersList();
+                        // If members less than totalMembers, enable input again
+                        if (members.length < totalMembers) {
+                            memberNameInput.disabled = false;
+                            generateBtn.disabled = true;
+                            teamSizeInput.disabled = true;
+                            notSameTeamInput.disabled = true;
+                            sameTeamInput.disabled = true;
+                            teamsOutput.innerHTML = '';
+                            clapContainer.style.display = 'none';
+                            memberNameInput.focus();
+                        }
+                    });
+
+                    span.appendChild(removeBtn);
+                    membersListDiv.appendChild(span);
+                });
+            }
+
+            // Helper: parse pairs from textarea input
+            function parsePairs(text) {
+                const pairs = [];
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                for (const line of lines) {
+                    const parts = line.split(',').map(p => p.trim());
+                    if (parts.length !== 2) {
+                        alert(`Invalid pair format: "${line}". Each line must have exactly two names separated by a comma.`);
+                        return null;
+                    }
+                    pairs.push(parts);
+                }
+                return pairs;
+            }
+
+            // Union-Find (Disjoint Set) for grouping "must be together"
+            class UnionFind {
+                constructor(elements) {
+                    this.parent = {};
+                    elements.forEach(e => this.parent[e] = e);
+                }
+                find(x) {
+                    if (this.parent[x] !== x) {
+                        this.parent[x] = this.find(this.parent[x]);
+                    }
+                    return this.parent[x];
+                }
+                union(a, b) {
+                    const rootA = this.find(a);
+                    const rootB = this.find(b);
+                    if (rootA !== rootB) {
+                        this.parent[rootB] = rootA;
+                    }
+                }
+                groups() {
+                    const map = {};
+                    for (const e in this.parent) {
+                        const root = this.find(e);
+                        if (!map[root]) map[root] = [];
+                        map[root].push(e);
+                    }
+                    return Object.values(map);
+                }
+            }
+
+            // Check if any "must not be together" pair is in the same cluster
+            function checkMustNotTogether(clusters, notTogetherPairs) {
+                for (const [a, b] of notTogetherPairs) {
+                    for (const cluster of clusters) {
+                        if (cluster.includes(a) && cluster.includes(b)) {
+                            return false; // conflict
+                        }
+                    }
+                }
+                return true;
+            }
+
+            // Shuffle array in-place
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            // Generate teams respecting constraints
+            function generateTeams(members, teamSize, mustNotTogetherPairs, mustTogetherPairs) {
+                // Step 1: Group members who must be together
+                const uf = new UnionFind(members);
+                for (const [a, b] of mustTogetherPairs) {
+                    if (!members.includes(a) || !members.includes(b)) {
+                        throw new Error(`Member in "must be together" pair not found: ${a}, ${b}`);
+                    }
+                    uf.union(a, b);
+                }
+                const clusters = uf.groups();
+
+                // Step 2: Check if any cluster contains members who must NOT be together
+                if (!checkMustNotTogether(clusters, mustNotTogetherPairs)) {
+                    throw new Error('Conflict: Some members who must NOT be together are in the same cluster due to "must be together" constraints.');
+                }
+
+                // Step 3: Shuffle clusters for randomness
+                shuffle(clusters);
+
+                // Step 4: Assign clusters to teams trying to respect "must NOT be together"
+                const teams = [];
+                const maxTeams = Math.ceil(members.length / teamSize);
+
+                for (let i = 0; i < maxTeams; i++) {
+                    teams.push([]);
+                }
+
+                for (const cluster of clusters) {
+                    // Find a team where cluster can fit and no "must not together" conflict
+                    let placed = false;
+                    for (const team of teams) {
+                        // Check size
+                        if (team.length + cluster.length > teamSize) continue;
+
+                        // Check conflicts with members in team
+                        let conflict = false;
+                        for (const memberInTeam of team) {
+                            for (const [a, b] of mustNotTogetherPairs) {
+                                if ((cluster.includes(a) && memberInTeam === b) || (cluster.includes(b) && memberInTeam === a)) {
+                                    conflict = true;
+                                    break;
+                                }
+                            }
+                            if (conflict) break;
+                        }
+                        if (!conflict) {
+                            team.push(...cluster);
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) {
+                        throw new Error('Cannot place all members respecting constraints with given team size.');
+                    }
+                }
+
+                // Remove empty teams (if any)
+                return teams.filter(t => t.length > 0);
+            }
+
+            generateBtn.addEventListener('click', () => {
+                teamsOutput.innerHTML = '';
+                clapContainer.style.display = 'none';
+
+                const teamSize = parseInt(teamSizeInput.value);
+                if (!teamSize || teamSize < 1) {
+                    alert('Please enter a valid team size (at least 1).');
+                    return;
+                }
+                if (teamSize > members.length) {
+                    alert('Team size cannot be greater than total members.');
+                    return;
+                }
+
+                // Parse constraints
+                const notTogetherPairs = parsePairs(notSameTeamInput.value);
+                if (notTogetherPairs === null) return; // parse error
+
+                const mustTogetherPairs = parsePairs(sameTeamInput.value);
+                if (mustTogetherPairs === null) return; // parse error
+
+                // Validate all members in constraints exist
+                for (const [a, b] of [...notTogetherPairs, ...mustTogetherPairs]) {
+                    if (!members.includes(a) || !members.includes(b)) {
+                        alert(`Member in constraints not found in members list: ${a}, ${b}`);
+                        return;
+                    }
+                }
+
+                try {
+                    const teams = generateTeams(members, teamSize, notTogetherPairs, mustTogetherPairs);
+
+                    // Display teams
+                    teamsOutput.innerHTML = '';
+                    teams.forEach((team, idx) => {
+                        const div = document.createElement('div');
+                        div.className = 'team';
+                        const h3 = document.createElement('h3');
+                        h3.innerHTML = `<i class="fas fa-user-friends"></i> Team ${idx + 1}`;
+                        const p = document.createElement('p');
+                        p.textContent = team.join(', ');
+                        div.appendChild(h3);
+                        div.appendChild(p);
+                        teamsOutput.appendChild(div);
+                    });
+
+                    clapContainer.style.display = 'flex';
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
